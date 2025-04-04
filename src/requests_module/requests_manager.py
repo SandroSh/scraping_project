@@ -1,11 +1,9 @@
-from typing import Dict, Optional
 import requests
 import ssl
 from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 from urllib3.poolmanager import PoolManager
 from urllib3.util.ssl_ import create_urllib3_context
-from error_handler import handle_http_error
-from time import time, sleep
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -29,69 +27,33 @@ class SSLAdapter(HTTPAdapter):
         return PoolManager(*args, **kwargs)
 
 
-def get_request(url: str, auth_token: Optional[str] = None, custom_headers: Optional[Dict] = None, timeout: int = 10) -> str:
-    """
-    Fetch web content from a given URL using a GET request with headers, with rate limiting.
-    Args:
-        url (str)
-        auth_token (str, optional)
-        custom_headers (dict, optional)
-        timeout (int): maximum amount of waiting time 
-    Returns:
-        str: The raw content 
-    Raises:
-        requests.RequestException
-    """
-    # Static state to track request timestamps (persistent across calls)
-    if not hasattr(get_request, 'request_times'):
-        get_request.request_times = [] 
-    if not hasattr(get_request, 'max_requests'):
-        get_request.max_requests = 10  # Max requests per period
-    if not hasattr(get_request, 'period'):
-        get_request.period = 60  
+def get_request(url, headers=None, timeout=10):
+    session = requests.Session()
+
+    # Configure retry strategy
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[500, 502, 503, 504]
+    )
+
+    # Mount HTTP and HTTPS adapters
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
     try:
-        # Rate limiting logic
-        current_time = time()
-        
-        # Remove timestamps older than the period
-        get_request.request_times = [t for t in get_request.request_times if current_time - t < get_request.period]
-
-        # Check if we've hit the limit
-        if len(get_request.request_times) >= get_request.max_requests:
-            
-            # Wait until the oldest request falls out of the period
-            sleep_time = get_request.period - (current_time - get_request.request_times[0])
-            sleep(sleep_time)
-          
-            current_time = time()
-            get_request.request_times = [t for t in get_request.request_times if current_time - t < get_request.period]
-
-       
-        get_request.request_times.append(current_time)
-
-   
-        session = requests.Session()
-        session.mount('https://', SSLAdapter())
-        
-        headers = {
-            "User-Agent": DEFAULT_USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        }
-      
-        if auth_token:
-            headers["Authorization"] = f"Bearer {auth_token}"
-      
-        if custom_headers:
-            headers.update(custom_headers)
-        
-        response = session.get(url, headers=headers, timeout=timeout, verify=True)
+        response = session.get(
+            url,
+            headers=headers or {},
+            timeout=timeout,
+            verify=True  # Keep SSL verification
+        )
         response.raise_for_status()
-        return response.text
-    
-    except requests.RequestException as e:
-        error_message = handle_http_error(e)
-        raise requests.RequestException(error_message)
+        return response
+
+    except Exception as e:
+        print(f"Request failed: {str(e)}")
+        raise
     finally:
         session.close()
-

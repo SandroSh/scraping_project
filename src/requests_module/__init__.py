@@ -1,1 +1,1 @@
-from requests_manager import get_request
+from .requests_manager import get_request

@@ -1,5 +1,8 @@
-beautifulsoup4
-requests
+beautifulsoup4~=4.13.3
+requests~=2.32.3
 lxml
 pytest
 requests_html
+bs4~=0.0.2
+utils~=1.0.2
+urllib3~=1.26.20
