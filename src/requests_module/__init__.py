@@ -1,0 +1,1 @@
+from requests_manager import get_request
