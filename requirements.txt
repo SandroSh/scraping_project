@@ -6,3 +6,4 @@ requests_html
 bs4~=0.0.2
 utils~=1.0.2
 urllib3~=1.26.20
+pandas~=2.2.3

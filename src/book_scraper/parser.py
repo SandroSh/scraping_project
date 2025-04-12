@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup, Tag
 from src.requests_module.requests_manager import get_request
-from src.Utils import absolute_url, extract_number
+from src.Utils.utils import absolute_url, extract_number
 
 
 def parse_html(html_content):
@@ -71,7 +71,7 @@ def extract_product_details(soup, base_url):
             try:
                 title_tag = article.select_one('h3 a')
                 title = title_tag['title'] if title_tag and 'title' in title_tag.attrs else "Title not found"
-                relative_link = title_tag['href'] if title_tag and 'href' in title_tag.attrs else ""
+                relative_link = title_tag.get("href", "")
                 if 'catalogue/' not in relative_link:
                     relative_link = 'catalogue/' + relative_link
                 full_link = absolute_url(base_url, relative_link) if relative_link else "Link not found"
@@ -85,14 +85,28 @@ def extract_product_details(soup, base_url):
 
                 description = extract_description(full_link)
 
+                rating_tag = article.select_one('p.star-rating')
+                rating_map = {
+                    'One': 1, 'Two': 2, 'Three': 3,
+                    'Four': 4, 'Five': 5
+                }
+                rating = 0
+                if rating_tag:
+                    for cls in rating_tag.get('class', []):
+                        if cls in rating_map:
+                            rating = rating_map[cls]
+                            break
+
                 product_data = {
                     'title': title,
-                    'price': price[0] if price else "Price not found",
+                    'price': price[0].replace("Â", "") if price else "Price not found",
                     'link': full_link,
                     'image_url': image_url,
                     'availability': availability_text,
                     'description': description,
+                    'rating': rating  # Add this line
                 }
+
                 products.append(product_data)
             except Exception as inner_e:
                 print(f"Error extracting product info: {inner_e}")
@@ -113,7 +127,7 @@ def scrape_all_pages(base_url):
     all_products = []
     next_page = base_url
     a = 0
-    while next_page and a < 5:
+    while next_page and a < 1:
         a+=1
         print(f"Fetching page: {next_page}")
         response = get_request(next_page)

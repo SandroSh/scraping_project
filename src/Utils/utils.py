@@ -1,29 +1,39 @@
 ﻿import csv
 import json
 import os
-from urllib.parse import urljoin
+from urllib.parse import urlparse, urljoin
 
 
-def absolute_url(base_url:str,relative_url:str) -> str:
-    return urljoin(base_url, relative_url)
+def absolute_url(base_url, relative_link):
+    """
+    Convert a relative URL to an absolute URL, ensuring it always contains "/catalogue/"
+    """
+    # Get website root (e.g., "http://books.toscrape.com/")
+    parsed_base = urlparse(base_url)
+    root_url = f"{parsed_base.scheme}://{parsed_base.netloc}/"
+
+    # Remove "../" navigation from relative link
+    parts = relative_link.strip("/").split("/")
+    cleaned_parts = [p for p in parts if p != ".."]
+    clean_path = "/".join(cleaned_parts)
+
+    # Enforce "/catalogue/" prefix
+    if not clean_path.startswith("catalogue/"):
+        enforced_path = f"catalogue/{clean_path}"
+    else:
+        enforced_path = clean_path
+
+    # Combine with root URL
+    return urljoin(root_url, enforced_path)
 
 def extract_number(text):
-    try:
-        start = text.find('(')
-        if start == -1:
-            return 0
+    """Extract numeric value from text."""
+    if not text:
+        return 0
 
-        end = text.find(' ', start)
-
-        if end == -1:
-            return 0
-
-        number_in_str = text[start + 1:end]
-
-        return int(number_in_str)
-    except (ValueError, IndexError) as e:
-        print(f"Error extracting number: {e}")
-        return -1
+    import re
+    numbers = re.findall(r'\d+\.?\d*', text)
+    return float(numbers[0]) if numbers else 0
 
 
 def save_books_to_csv(books, filename="books.csv", data_folder="data"):
