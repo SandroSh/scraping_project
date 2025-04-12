@@ -471,3 +471,84 @@ class Processing:
             results[category_name] = category_result
 
         return results
+
+
+    @staticmethod
+    def load_json_data(filepath: str) -> Optional[List[Dict[str, Any]]]:
+        """Load JSON data from a file."""
+        if not os.path.exists(filepath):
+            print(f"File not found: {filepath}")
+            return None
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading JSON: {e}")
+            return None
+
+    @staticmethod
+    def sort_books_by_rating(books: List[Dict[str, Any]], descending: bool = True) -> List[Dict[str, Any]]:
+        """Sort books by rating."""
+        return sorted(books, key=lambda x: x.get('rating', 0), reverse=descending)
+
+    @staticmethod
+    def filter_books_by_min_rating(books: List[Dict[str, Any]], min_rating: float) -> List[Dict[str, Any]]:
+        """Filter books that have a rating greater than or equal to min_rating."""
+        return [book for book in books if book.get('rating', 0) >= min_rating]
+
+    @staticmethod
+    def get_top_n_books_by_rating(books: List[Dict[str, Any]], n: int) -> List[Dict[str, Any]]:
+        """Get top N books based on rating."""
+        return Processing.sort_books_by_rating(books)[:n]
+
+    @staticmethod
+    def group_books_by_category(books: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """Group books by their category."""
+        grouped = {}
+        for book in books:
+            category = book.get('category', 'Unknown')
+            grouped.setdefault(category, []).append(book)
+        return grouped
+
+    @staticmethod
+    def average_rating(books: List[Dict[str, Any]]) -> float:
+        """Return the average rating across all books that have one."""
+        ratings = [b['rating'] for b in books if 'rating' in b]
+        return sum(ratings) / len(ratings) if ratings else 0.0
+
+    @staticmethod
+    def books_per_category(books: List[Dict[str, Any]]) -> Dict[str, int]:
+        """Count how many books are in each category."""
+        result = {}
+        for book in books:
+            cat = book.get('category', 'Unknown')
+            result[cat] = result.get(cat, 0) + 1
+        return result
+
+    @staticmethod
+    def search_by_title(books: List[Dict[str, Any]], text: str) -> List[Dict[str, Any]]:
+        """Find books where the title includes the given text (case-insensitive)."""
+        text = text.lower()
+        return [b for b in books if text in b.get('title', '').lower()]
+
+    @staticmethod
+    def in_price_range(books: List[Dict[str, Any]], low: float, high: float) -> List[Dict[str, Any]]:
+        """Return all books priced between 'low' and 'high'."""
+        return [b for b in books if low <= b.get('price', 0) <= high]
+
+    @staticmethod
+    def top_expensive(books: List[Dict[str, Any]], count: int = 5) -> List[Dict[str, Any]]:
+        """Return the 'count' most expensive books."""
+        return sorted(books, key=lambda b: b.get('price', 0), reverse=True)[:count]
+
+    @staticmethod
+    def top_cheap(books: List[Dict[str, Any]], count: int = 5) -> List[Dict[str, Any]]:
+        """Return the 'count' cheapest books."""
+        return sorted(books, key=lambda b: b.get('price', 0))[:count]
+
+    @staticmethod
+    def missing_info(books: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Find books missing title, price, rating, or category."""
+        needed = {'title', 'price', 'rating', 'category'}
+        return [b for b in books if not needed.issubset(b.keys())]
+

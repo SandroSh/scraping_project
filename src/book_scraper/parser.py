@@ -148,13 +148,13 @@ def scrape_all_pages(base_url):
 
 def main():
     base_url = "http://books.toscrape.com/"
-    products = scrape_all_pages(base_url)
+    books = scrape_all_pages(base_url)
+
     print("\n--- Extracted Product Details ---")
-    for product in products:
-        for key, value in product.items():
+    for book in books:
+        for key, value in book.items():
             print(f"{key}: {value}")
         print("-" * 50)
-
 if __name__ == "__main__":
     main()
 
