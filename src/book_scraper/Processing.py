@@ -534,21 +534,33 @@ class Processing:
     @staticmethod
     def in_price_range(books: List[Dict[str, Any]], low: float, high: float) -> List[Dict[str, Any]]:
         """Return all books priced between 'low' and 'high'."""
-        return [b for b in books if low <= b.get('price', 0) <= high]
+        return [b for b in books if low <= float(b.get('price', 0)) <= high]
 
     @staticmethod
     def top_expensive(books: List[Dict[str, Any]], count: int = 5) -> List[Dict[str, Any]]:
         """Return the 'count' most expensive books."""
-        return sorted(books, key=lambda b: b.get('price', 0), reverse=True)[:count]
+        return sorted(books, key=lambda b: float(b.get('price', 0)), reverse=True)[:count]
 
     @staticmethod
     def top_cheap(books: List[Dict[str, Any]], count: int = 5) -> List[Dict[str, Any]]:
         """Return the 'count' cheapest books."""
-        return sorted(books, key=lambda b: b.get('price', 0))[:count]
+        return sorted(books, key=lambda b: float(b.get('price', 0)))[:count]
 
     @staticmethod
     def missing_info(books: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Find books missing title, price, rating, or category."""
         needed = {'title', 'price', 'rating', 'category'}
         return [b for b in books if not needed.issubset(b.keys())]
+
+    @staticmethod
+    def load_all_books_from_folder(base_path: str) -> List[Dict[str, Any]]:
+        books = []
+        for root, _, files in os.walk(base_path):
+            for file in files:
+                if file.endswith('.json'):
+                    path = os.path.join(root, file)
+                    data = Processing.load_json_data(path)
+                    if data:
+                        books.extend(data)
+        return books
 
